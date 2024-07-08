@@ -1,6 +1,6 @@
 FROM golang:1.22-alpine AS build-env
 
-RUN apk update && apk add --no-cache git openssh-client
+RUN apk update && apk add --no-cache gcc musl-dev make
 
 WORKDIR /usr/src/app
 COPY go.mod go.sum ./
