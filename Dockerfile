@@ -7,6 +7,9 @@ COPY go.mod go.sum ./
 RUN --mount=type=ssh go mod download -x
 
 COPY . .
+
+ENV CGO_ENABLED=1
+
 RUN sh .github/docker-build.sh
 
 FROM alpine:latest
