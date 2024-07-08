@@ -44,7 +44,8 @@ jobs:
         context: .
         ssh: |
           default=${{ env.SSH_AUTH_SOCK }}
-        file: Dockerfile.web
+        file: Dockerfile
         push: true
         tags: |
-            ghcr.io/${{ env.GITHUBORG }}/${{ env.REPO_NAME }}-web:latest
+            ghcr.io/${{ env.GITHUBORG }}/${{ env.REPO_NAME }}:latest
+          
