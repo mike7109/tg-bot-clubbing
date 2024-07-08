@@ -7,7 +7,7 @@ COPY go.mod go.sum ./
 RUN --mount=type=ssh go mod download -x
 
 COPY . .
-RUN sh .github/docker-build-app.sh
+RUN sh .github/docker-build.sh
 
 FROM alpine:latest
 
