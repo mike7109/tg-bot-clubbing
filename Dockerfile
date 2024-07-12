@@ -23,6 +23,6 @@ WORKDIR /
 COPY --from=build-env /app/build/app /app
 
 # Создание директории для базы данных в контейнере
-RUN mkdir -p /app/data/sqlite
+RUN mkdir -p /data/sqlite
 
 CMD ["/app"]
