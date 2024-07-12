@@ -64,4 +64,4 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
       - name: Deploy to Server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.USER_NAME_HOSTS }}@{{ secrets.IP_HOSTS }} "bash ./deploy.sh"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USER_NAME_HOSTS }}@${{ secrets.IP_HOSTS }} "bash ./deploy.sh"
