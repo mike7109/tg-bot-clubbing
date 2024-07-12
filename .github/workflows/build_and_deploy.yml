@@ -64,4 +64,4 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
       - name: Deploy to Server
         run: |
-          ssh user@your_server "bash -s" < ./deploy.sh
+          ssh ${{ secrets.USER_NAME_HOSTS }}@${{ secrets.IP_HOSTS }} "bash -s" < ./deploy.sh
