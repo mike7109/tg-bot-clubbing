@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/mike7109/tg-bot-clubbing/internal/config"
 	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
@@ -21,15 +22,21 @@ type Core struct {
 func New() (*Core, error) {
 	_ = godotenv.Load()
 
+	fmt.Println("Starting bot...")
+
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatal("can't get config: ", err)
 	}
 
+	fmt.Println("Config loaded...")
+
 	db, err := sqlite.NewSqliteClient(cfg.Database.Path)
 	if err != nil {
 		log.Fatal("can't init database: ", err)
 	}
+
+	fmt.Println("Database connected...")
 
 	storage := repositories.NewStorage(db)
 
