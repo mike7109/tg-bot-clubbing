@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/mike7109/tg-bot-clubbing/internal/config"
@@ -9,17 +10,11 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/pkg/clients/sqlite"
 	"github.com/mike7109/tg-bot-clubbing/pkg/clients/telegram"
 	"log"
+	"os"
+	"os/signal"
 )
 
-type IProcess interface {
-	Start() error
-}
-
-type Core struct {
-	process IProcess
-}
-
-func New() (*Core, error) {
+func New() error {
 	_ = godotenv.Load()
 
 	fmt.Println("Starting bot...")
@@ -40,16 +35,29 @@ func New() (*Core, error) {
 
 	storage := repositories.NewStorage(db)
 
-	factory := service.NewFactoryCommand(storage)
-
 	tgClient := telegram.NewTelegramClient(cfg.Telegram.Token, cfg.Debug.Telegram)
-	process := service.NewProcess(tgClient, factory)
 
-	return &Core{
-		process: process,
-	}, nil
-}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer stop()
 
-func (c *Core) Start() error {
-	return c.process.Start()
+	p, err := service.NewTgProcessor(ctx, tgClient, storage)
+	if err != nil {
+		log.Fatal("can't create telegram processor: ", err)
+	}
+
+	fmt.Println("Telegram processor created...")
+
+	defer func() {
+		fmt.Println("Shutting down")
+		p.WaitClose()
+		db.Close()
+		fmt.Println("Exiting")
+	}()
+
+	// Ожидание событий в канале ошибок или сигналов
+	select {
+	case <-ctx.Done():
+	}
+
+	return err
 }

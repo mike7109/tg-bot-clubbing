@@ -4,49 +4,76 @@ import (
 	"context"
 	"fmt"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
+	"github.com/mike7109/tg-bot-clubbing/internal/service/processor"
+	"github.com/mike7109/tg-bot-clubbing/internal/service/processor/task"
+	"sync"
 )
 
-type Process struct {
-	tgBot    *tgApi.BotAPI
-	fCommand IFactoryCommand
+const (
+	RndCmd   = "/rnd"
+	HelpCmd  = "/help"
+	StartCmd = "/start"
+
+	Add = "/add"
+)
+
+type TgProcessor struct {
+	chDone chan struct{}
 }
 
-func NewProcess(tgBot *tgApi.BotAPI, factoryCommand IFactoryCommand) *Process {
-	return &Process{
-		tgBot:    tgBot,
-		fCommand: factoryCommand,
+func NewTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) (*TgProcessor, error) {
+	p := &TgProcessor{
+		chDone: make(chan struct{}),
 	}
-}
-
-func (p Process) process(ctx context.Context, update tgApi.Update) error {
-	if update.Message == nil {
-		return nil
-	}
-
-	msg, err := p.fCommand.CreateCommand(update).Execute()
+	err := p.newTgProcessor(ctx, tgBot, storage)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to create new tg processor: %w", err)
 	}
 
-	_, err = p.tgBot.Send(msg)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return p, nil
 }
 
-func (p Process) Start() error {
+func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) error {
 	u := tgApi.NewUpdate(0)
 	u.Timeout = 60
 
-	ctx := context.TODO()
+	taskProcessor := processor.NewTaskProcessor()
 
-	for update := range p.tgBot.GetUpdatesChan(u) {
-		if err := p.process(ctx, update); err != nil {
-			return fmt.Errorf("failed to process update: %v", err)
+	// Add task processor
+	taskProcessor.AddTaskProcessor(StartCmd, task.Start(ctx, tgBot))
+	taskProcessor.AddTaskProcessor(HelpCmd, task.Help(ctx, tgBot))
+	taskProcessor.AddTaskProcessor(RndCmd, task.Rnd(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(Add, task.Save(ctx, tgBot, storage))
+
+	var wg sync.WaitGroup
+
+	consume := func(updates <-chan tgApi.Update) {
+		for update := range updates {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				taskProcessor.Consume(ctx, update)
+			}()
 		}
 	}
 
+	go consume(tgBot.GetUpdatesChan(u))
+	fmt.Println("Worker started")
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			tgBot.StopReceivingUpdates()
+			wg.Wait()
+			close(p.chDone)
+			fmt.Println("Worker stopped")
+		}
+	}()
+
 	return nil
+}
+
+func (p *TgProcessor) WaitClose() {
+	<-p.chDone
 }
