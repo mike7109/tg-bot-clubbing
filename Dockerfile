@@ -10,9 +10,6 @@ RUN --mount=type=ssh go mod download -x
 
 COPY . .
 
-# Создание директории для базы данных в контейнере
-RUN mkdir -p /app/data/sqlite
-
 # Установка переменной окружения для пути к базе данных
 ENV SQLITE_PATH=/app/data/sqlite/storage.db
 
@@ -24,5 +21,8 @@ FROM alpine:latest
 
 WORKDIR /
 COPY --from=build-env /app/build/app /app
+
+# Создание директории для базы данных в контейнере
+RUN mkdir -p /app/data/sqlite
 
 CMD ["/app"]
