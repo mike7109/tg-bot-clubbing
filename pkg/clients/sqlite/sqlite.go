@@ -46,7 +46,16 @@ func createTable(db *sql.DB) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	q := `CREATE TABLE IF NOT EXISTS pages (url TEXT, user_name TEXT)`
+	q := `
+			CREATE TABLE IF NOT EXISTS pages (
+			id UUID PRIMARY KEY,
+			url TEXT NOT NULL,
+			user_name TEXT NOT NULL,
+			name TEXT,
+			description TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`
 
 	_, err := db.ExecContext(ctx, q)
 	if err != nil {
