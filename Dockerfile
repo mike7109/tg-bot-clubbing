@@ -10,6 +10,9 @@ RUN --mount=type=ssh go mod download -x
 
 COPY . .
 
+# Создание директории для базы данных в контейнере
+RUN mkdir -p /app/data/sqlite
+
 # Установка переменной окружения для пути к базе данных
 ENV SQLITE_PATH=/app/data/sqlite/storage.db
 
