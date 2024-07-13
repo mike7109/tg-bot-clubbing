@@ -82,7 +82,7 @@ func (c TaskProcessor) parseCommand(update tgApi.Update) string {
 	}
 
 	if isAddCmd(update.Message.Text) {
-		return "/add"
+		return "/add " + strings.TrimSpace(update.Message.Text)
 	}
 
 	return update.Message.Text
