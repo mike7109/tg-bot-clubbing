@@ -89,8 +89,9 @@ func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page,
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, entity.ErrNoSavedPages
 		}
-	}
 
+		return nil, fmt.Errorf("can't list pages: %w", err)
+	}
 	defer rows.Close()
 
 	var pages []*entity.Page
