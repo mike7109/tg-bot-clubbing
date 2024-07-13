@@ -54,7 +54,8 @@ func createTable(db *sql.DB) error {
 			name TEXT,
 			description TEXT,
 			category TEXT,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE (url, user_name) -- Добавление уникального индекса
 		);
 	`
 
