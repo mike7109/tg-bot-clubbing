@@ -7,17 +7,8 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
 	"github.com/mike7109/tg-bot-clubbing/internal/service/processor"
 	"github.com/mike7109/tg-bot-clubbing/internal/service/processor/task"
+	"github.com/mike7109/tg-bot-clubbing/pkg/commands"
 	"sync"
-)
-
-const (
-	RndCmd   = "/rnd"
-	HelpCmd  = "/help"
-	StartCmd = "/start"
-
-	AddCmd       = "/add"
-	AddSimpleCmd = "/add_simple"
-	ListUrl      = "/list"
 )
 
 type TgProcessor struct {
@@ -43,12 +34,12 @@ func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, s
 	taskProcessor := processor.NewTaskProcessor(tgBot)
 
 	// AddCmd task processor
-	taskProcessor.AddTaskProcessor(StartCmd, task.Start(ctx, tgBot))
-	taskProcessor.AddTaskProcessor(HelpCmd, task.Help(ctx, tgBot))
-	taskProcessor.AddTaskProcessor(RndCmd, task.Rnd(ctx, tgBot, storage))
-	taskProcessor.AddTaskProcessor(AddCmd, task.Save(ctx, tgBot, storage))
-	taskProcessor.AddTaskProcessor(AddSimpleCmd, task.SaveSimple(ctx, tgBot, storage))
-	taskProcessor.AddTaskProcessor(ListUrl, task.ListUrl(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(commands.StartCmd, task.Start(ctx, tgBot))
+	taskProcessor.AddTaskProcessor(commands.HelpCmd, task.Help(ctx, tgBot))
+	taskProcessor.AddTaskProcessor(commands.RndCmd, task.Rnd(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(commands.AddCmd, task.Save(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(commands.AddSimpleCmd, task.SaveSimple(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(commands.ListUrl, task.ListUrl(ctx, tgBot, storage))
 
 	var wg sync.WaitGroup
 
