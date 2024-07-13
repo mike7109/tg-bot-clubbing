@@ -5,8 +5,8 @@ import (
 	"fmt"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mike7109/tg-bot-clubbing/pkg/commands"
+	"github.com/mike7109/tg-bot-clubbing/pkg/utls"
 	"go.uber.org/zap"
-	"net/url"
 	"strings"
 )
 
@@ -82,19 +82,9 @@ func (c TaskProcessor) parseCommand(update tgApi.Update) string {
 		return parts[0]
 	}
 
-	if isAddCmd(update.Message.Text) {
+	if utls.IsAddCmd(update.Message.Text) {
 		return commands.AddSimpleCmd
 	}
 
 	return update.Message.Text
-}
-
-func isAddCmd(text string) bool {
-	return isURL(text)
-}
-
-func isURL(text string) bool {
-	u, err := url.Parse(text)
-
-	return err == nil && u.Host != ""
 }

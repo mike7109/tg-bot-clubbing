@@ -9,6 +9,7 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
 	"github.com/mike7109/tg-bot-clubbing/internal/service/processor"
 	"github.com/mike7109/tg-bot-clubbing/pkg/messages"
+	"github.com/mike7109/tg-bot-clubbing/pkg/utls"
 	"log"
 	"regexp"
 )
@@ -86,6 +87,15 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		}
 
 		url := matches[1]
+		if utls.IsURL(url) {
+			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidUrl)
+			_, err := tgBot.Send(msgConfig)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
 
 		var description, title, category *string
 
