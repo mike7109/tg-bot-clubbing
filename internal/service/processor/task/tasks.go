@@ -199,7 +199,20 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Sto
 
 		var urlList string
 		for i, page := range pages {
-			urlList += fmt.Sprintf("%d. %s\n", i+1, page.URL)
+			urlList += fmt.Sprintf("%d. %s ", i+1, page.URL)
+			if page.Title != nil {
+				urlList += fmt.Sprintf("%s ", *page.Title)
+			}
+
+			if page.Description != nil {
+				urlList += fmt.Sprintf("%s ", *page.Description)
+			}
+
+			if page.Category != nil {
+				urlList += fmt.Sprintf("%s ", *page.Category)
+			}
+
+			urlList += "\n"
 		}
 
 		msgConfig := tgApi.NewMessage(msg.Chat.ID, urlList)
