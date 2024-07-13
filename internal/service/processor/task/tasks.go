@@ -1,9 +1,12 @@
 package task
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mike7109/tg-bot-clubbing/internal/entity"
 	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
@@ -11,6 +14,8 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/pkg/messages"
 	"github.com/mike7109/tg-bot-clubbing/pkg/utls"
 	"log"
+	"net/http"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -107,6 +112,7 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		if len(matches) > 2 {
 			category = &matches[2]
 		}
+
 		if len(matches) > 3 {
 			title = &matches[3]
 		}
@@ -141,6 +147,33 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		if err != nil {
 			return err
 		}
+
+		go func() {
+			if page.Category != nil {
+				_, categoryAI, err := FetchPageInfo(page.URL)
+				if err != nil {
+					log.Println("Failed to fetch page info: ", err)
+					return
+				}
+
+				out, err := ClassifyLink(categoryAI)
+				if err != nil {
+					log.Println("Failed to classify link: ", err)
+					return
+				}
+
+				if out != nil {
+					page.Category = out
+					if err := storage.Save(ctx, page); err != nil {
+						log.Println("Failed to save category: ", err)
+						return
+					}
+
+					msgConfig := tgApi.NewMessage(msg.Chat.ID, fmt.Sprintf("Добавил категорию: %s к ссылке %s", *out, page.URL))
+					_, err = tgBot.Send(msgConfig)
+				}
+			}
+		}()
 
 		return nil
 	}
@@ -235,4 +268,88 @@ func DeleteAll(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.S
 
 		return nil
 	}
+}
+
+type ClassificationRequest struct {
+	Inputs     string `json:"inputs"`
+	Parameters struct {
+		CandidateLabels []string `json:"candidate_labels"`
+		MultiLabel      bool     `json:"multi_label"`
+	} `json:"parameters"`
+}
+
+type ClassificationResponse struct {
+	Labels []string  `json:"labels"`
+	Scores []float64 `json:"scores"`
+}
+
+func ClassifyLink(description string) (*string, error) {
+	candidateLabels := []string{"спорт", "еда", "технологии", "политика", "музыка", "путешествия"}
+	requestBody, _ := json.Marshal(ClassificationRequest{
+		Inputs: description,
+		Parameters: struct {
+			CandidateLabels []string `json:"candidate_labels"`
+			MultiLabel      bool     `json:"multi_label"`
+		}{
+			CandidateLabels: candidateLabels,
+			MultiLabel:      false,
+		},
+	})
+
+	req, err := http.NewRequest("POST", "https://api-inference.huggingface.co/models/facebook/bart-large-mnli", bytes.NewBuffer(requestBody))
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("HUGGING_FACE_API_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var classificationResp ClassificationResponse
+	err = json.NewDecoder(resp.Body).Decode(&classificationResp)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(classificationResp.Labels) > 0 && classificationResp.Scores[0] > 0.35 {
+		return &classificationResp.Labels[0], nil
+	}
+
+	return nil, nil
+}
+
+// Page представляет модель для хранения данных о странице.
+type Page struct {
+	ID          string
+	URL         string
+	UserName    string
+	Name        string
+	Description string
+	Category    string
+	CreatedAt   string
+}
+
+// fetchPageInfo получает информацию с указанного URL.
+func FetchPageInfo(url string) (string, string, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return "", "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return "", "", fmt.Errorf("failed to fetch the page, status code: %d", res.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	title := doc.Find("title").Text()
+	description, _ := doc.Find("meta[name='description']").Attr("content")
+
+	return title, description, nil
 }
