@@ -126,6 +126,7 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Sto
 		}
 
 		msgConfig := tgApi.NewMessage(msg.Chat.ID, urlList)
+		msgConfig.DisableWebPagePreview = true // Отключаем веб-превью
 		_, err = tgBot.Send(msgConfig)
 		if err != nil {
 			return err
