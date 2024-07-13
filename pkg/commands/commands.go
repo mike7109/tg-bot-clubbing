@@ -8,4 +8,5 @@ const (
 	AddCmd       = "/add"
 	AddSimpleCmd = "/add_simple"
 	ListUrl      = "/list"
+	DeleteAll    = "/delete_all"
 )

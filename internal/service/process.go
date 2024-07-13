@@ -40,6 +40,7 @@ func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, s
 	taskProcessor.AddTaskProcessor(commands.AddCmd, task.Save(ctx, tgBot, storage))
 	taskProcessor.AddTaskProcessor(commands.AddSimpleCmd, task.SaveSimple(ctx, tgBot, storage))
 	taskProcessor.AddTaskProcessor(commands.ListUrl, task.ListUrl(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(commands.DeleteAll, task.DeleteAll(ctx, tgBot, storage))
 
 	var wg sync.WaitGroup
 
