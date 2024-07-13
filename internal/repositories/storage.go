@@ -103,5 +103,9 @@ func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page,
 		pages = append(pages, page)
 	}
 
+	if len(pages) == 0 {
+		return nil, entity.ErrNoSavedPages
+	}
+
 	return pages, nil
 }
