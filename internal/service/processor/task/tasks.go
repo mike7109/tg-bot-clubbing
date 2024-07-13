@@ -134,13 +134,13 @@ func parsePageFromMessage(msg *tgApi.Message) (*entity.Page, error) {
 	urlTrim := strings.TrimSpace(matches[1])
 
 	var description, title, category *string
-	if len(matches) > 2 {
+	if len(matches) > 2 && matches[2] != "" {
 		category = &matches[2]
 	}
-	if len(matches) > 3 {
+	if len(matches) > 3 && matches[3] != "" {
 		title = &matches[3]
 	}
-	if len(matches) > 4 {
+	if len(matches) > 4 && matches[4] != "" {
 		description = &matches[4]
 	}
 
@@ -186,8 +186,9 @@ func fetchAndSaveCategory(ctx context.Context, tgBot *tgApi.BotAPI, storage *rep
 	var titleGet, categoryAI string
 	var err error
 
+	titleGet, categoryAI, err = FetchPageInfo(page.URL)
+
 	if page.Title == nil {
-		titleGet, categoryAI, err = FetchPageInfo(page.URL)
 		if err != nil {
 			log.Println("Failed to fetch page info: ", err)
 			return
@@ -195,11 +196,12 @@ func fetchAndSaveCategory(ctx context.Context, tgBot *tgApi.BotAPI, storage *rep
 
 		if titleGet != "" {
 			page.Title = &titleGet
-			msgAdd = "Я достал заголовок:" + titleGet + "."
+			msgAdd = "Я достал заголовок: " + titleGet + "\n"
 		}
 	}
 
-	if page.Category != nil {
+	if page.Category == nil {
+		titleGet, categoryAI, err = FetchPageInfo(page.URL)
 		out, err := ClassifyLink(categoryAI)
 		if err != nil {
 			log.Println("Failed to classify link: ", err)
@@ -208,7 +210,7 @@ func fetchAndSaveCategory(ctx context.Context, tgBot *tgApi.BotAPI, storage *rep
 
 		if out != nil {
 			page.Category = out
-			msgAdd += fmt.Sprintf("Определил категорию: %s.", *out)
+			msgAdd += fmt.Sprintf("Определил категорию: %s\n", *out)
 		}
 	}
 
@@ -216,29 +218,30 @@ func fetchAndSaveCategory(ctx context.Context, tgBot *tgApi.BotAPI, storage *rep
 		return
 	}
 
-	if err := storage.Save(ctx, page); err != nil {
-		log.Println("Failed to save category: ", err)
-		return
-	}
+	//if err := storage.Save(ctx, page); err != nil {
+	//	log.Println("Failed to save category: ", err)
+	//	return
+	//}
 
-	msgAdd += fmt.Sprintf("Для этой ссылки: %s", page.URL)
+	msgAdd += fmt.Sprintf("Для этой ссылки: %s\n", page.URL)
+	msgAdd += "Но я пока не буду менять, пока не допилю бота))\n"
+	msgAdd += "Вопрос, функционал нужный?\n"
+	msgAdd += "Если да, то пиши @mike7109\n"
+	msgAdd += "Сообщение будет удалено через 5 минут"
 
 	msgConfig := tgApi.NewMessage(chatID, msgAdd)
 
-	msg, err := tgBot.Send(msgConfig)
+	msgSend, err := tgBot.Send(msgConfig)
 	if err != nil {
 		log.Println("Failed to send message: ", err)
 		return
 	}
 
-	time.Sleep(5 * time.Second)
+	// Устанавливаем таймер на 5 минут для удаления сообщения
+	time.AfterFunc(5*time.Minute, func() {
+		deleteMessage(tgBot, msgSend.Chat.ID, msgSend.MessageID)
+	})
 
-	msgConfigDelted := tgApi.DeleteMessageConfig{
-		ChatID:    chatID,
-		MessageID: msg.MessageID,
-	}
-
-	_, _ = tgBot.Send(msgConfigDelted)
 	return
 }
 
@@ -415,4 +418,12 @@ func FetchPageInfo(url string) (string, string, error) {
 	description, _ := doc.Find("meta[name='description']").Attr("content")
 
 	return title, description, nil
+}
+
+func deleteMessage(bot *tgApi.BotAPI, chatID int64, messageID int) {
+	deleteMsg := tgApi.NewDeleteMessage(chatID, messageID)
+	_, err := bot.Send(deleteMsg)
+	if err != nil {
+		log.Println("Failed to delete message:", err)
+	}
 }
