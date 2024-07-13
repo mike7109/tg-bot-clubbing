@@ -18,6 +18,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func Start(ctx context.Context, tgBot *tgApi.BotAPI) processor.ProcessingFunc {
@@ -78,64 +79,17 @@ func Rnd(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage
 
 func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
 	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
-		if !strings.Contains(msg.Text, "/add") {
-			msg.Text = "/add " + msg.Text
+		if err := ensureAddCommandPrefix(msg); err != nil {
+			return handleAddCommandError(tgBot, msg)
 		}
 
-		re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+))?(?:\s+(.+?))?$`)
-
-		matches := re.FindStringSubmatch(msg.Text)
-
-		if len(matches) == 0 {
-			if strings.Contains(msg.Text, "/add") {
-				msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgAddUrl)
-				_, err := tgBot.Send(msgConfig)
-				if err != nil {
-					return err
-				}
-
-				return nil
-			}
-
-			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidAddCommand)
-			_, err := tgBot.Send(msgConfig)
-			if err != nil {
-				return err
-			}
-
-			return nil
+		page, err := parsePageFromMessage(msg)
+		if err != nil {
+			return sendInvalidAddCommandMessage(tgBot, msg)
 		}
 
-		urlTrim := strings.TrimSpace(matches[1])
-		if !utls.IsURL(urlTrim) {
-			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidUrl)
-			_, err := tgBot.Send(msgConfig)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}
-
-		var description, title, category *string
-
-		if len(matches) > 2 {
-			category = &matches[2]
-		}
-
-		if len(matches) > 3 {
-			title = &matches[3]
-		}
-		if len(matches) > 4 {
-			description = &matches[4]
-		}
-
-		page := &entity.Page{
-			UserName:    msg.From.UserName,
-			URL:         urlTrim,
-			Title:       title,
-			Category:    category,
-			Description: description,
+		if !utls.IsURL(page.URL) {
+			return sendInvalidUrlMessage(tgBot, msg)
 		}
 
 		sendMsg := messages.MsgSaved
@@ -152,41 +106,140 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			return err
 		}
 
-		msgConfig := tgApi.NewMessage(msg.Chat.ID, sendMsg)
-		_, err = tgBot.Send(msgConfig)
-		if err != nil {
+		if err := sendMessage(tgBot, msg.Chat.ID, sendMsg); err != nil {
 			return err
 		}
 
-		go func() {
-			if page.Category != nil {
-				_, categoryAI, err := FetchPageInfo(page.URL)
-				if err != nil {
-					log.Println("Failed to fetch page info: ", err)
-					return
-				}
-
-				out, err := ClassifyLink(categoryAI)
-				if err != nil {
-					log.Println("Failed to classify link: ", err)
-					return
-				}
-
-				if out != nil {
-					page.Category = out
-					if err := storage.Save(ctx, page); err != nil {
-						log.Println("Failed to save category: ", err)
-						return
-					}
-
-					msgConfig := tgApi.NewMessage(msg.Chat.ID, fmt.Sprintf("Добавил категорию: %s к ссылке %s", *out, page.URL))
-					_, err = tgBot.Send(msgConfig)
-				}
-			}
-		}()
+		go fetchAndSaveCategory(ctx, tgBot, storage, page, msg.Chat.ID)
 
 		return nil
 	}
+}
+
+func ensureAddCommandPrefix(msg *tgApi.Message) error {
+	if !strings.Contains(msg.Text, "/add") {
+		msg.Text = "/add " + msg.Text
+	}
+	return nil
+}
+
+func parsePageFromMessage(msg *tgApi.Message) (*entity.Page, error) {
+	re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+))?(?:\s+(.+?))?$`)
+	matches := re.FindStringSubmatch(msg.Text)
+
+	if len(matches) == 0 {
+		return nil, errors.New("invalid add command")
+	}
+
+	urlTrim := strings.TrimSpace(matches[1])
+
+	var description, title, category *string
+	if len(matches) > 2 {
+		category = &matches[2]
+	}
+	if len(matches) > 3 {
+		title = &matches[3]
+	}
+	if len(matches) > 4 {
+		description = &matches[4]
+	}
+
+	page := &entity.Page{
+		UserName:    msg.From.UserName,
+		URL:         urlTrim,
+		Title:       title,
+		Category:    category,
+		Description: description,
+	}
+
+	return page, nil
+}
+
+func handleAddCommandError(tgBot *tgApi.BotAPI, msg *tgApi.Message) error {
+	if strings.Contains(msg.Text, "/add") {
+		return sendMessage(tgBot, msg.Chat.ID, messages.MsgAddUrl)
+	}
+
+	return sendMessage(tgBot, msg.Chat.ID, messages.MsgInvalidAddCommand)
+}
+
+func sendInvalidAddCommandMessage(tgBot *tgApi.BotAPI, msg *tgApi.Message) error {
+	return sendMessage(tgBot, msg.Chat.ID, messages.MsgInvalidAddCommand)
+}
+
+func sendInvalidUrlMessage(tgBot *tgApi.BotAPI, msg *tgApi.Message) error {
+	return sendMessage(tgBot, msg.Chat.ID, messages.MsgInvalidUrl)
+}
+
+func sendMessage(tgBot *tgApi.BotAPI, chatID int64, text string) error {
+	msgConfig := tgApi.NewMessage(chatID, text)
+	_, err := tgBot.Send(msgConfig)
+	return err
+}
+
+func fetchAndSaveCategory(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage, page *entity.Page, chatID int64) {
+	if page == nil {
+		return
+	}
+
+	var msgAdd string
+	var titleGet, categoryAI string
+	var err error
+
+	if page.Title == nil {
+		titleGet, categoryAI, err = FetchPageInfo(page.URL)
+		if err != nil {
+			log.Println("Failed to fetch page info: ", err)
+			return
+		}
+
+		if titleGet != "" {
+			page.Title = &titleGet
+			msgAdd = "Я достал заголовок:" + titleGet + "."
+		}
+	}
+
+	if page.Category != nil {
+		out, err := ClassifyLink(categoryAI)
+		if err != nil {
+			log.Println("Failed to classify link: ", err)
+			return
+		}
+
+		if out != nil {
+			page.Category = out
+			msgAdd += fmt.Sprintf("Определил категорию: %s.", *out)
+		}
+	}
+
+	if page.Title == nil && page.Category == nil {
+		return
+	}
+
+	if err := storage.Save(ctx, page); err != nil {
+		log.Println("Failed to save category: ", err)
+		return
+	}
+
+	msgAdd += fmt.Sprintf("Для этой ссылки: %s", page.URL)
+
+	msgConfig := tgApi.NewMessage(chatID, msgAdd)
+
+	msg, err := tgBot.Send(msgConfig)
+	if err != nil {
+		log.Println("Failed to send message: ", err)
+		return
+	}
+
+	time.Sleep(5 * time.Second)
+
+	msgConfigDelted := tgApi.DeleteMessageConfig{
+		ChatID:    chatID,
+		MessageID: msg.MessageID,
+	}
+
+	_, _ = tgBot.Send(msgConfigDelted)
+	return
 }
 
 func SaveSimple(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
