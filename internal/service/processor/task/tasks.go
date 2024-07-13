@@ -119,25 +119,21 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			Description: description,
 		}
 
+		sendMsg := messages.MsgSaved
+
 		isExists, err := storage.IsExists(ctx, page)
 		if err != nil {
 			return err
 		}
 		if isExists {
-			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgAlreadyExists)
-			_, err = tgBot.Send(msgConfig)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			sendMsg = messages.MsgAlreadyExists
 		}
 
 		if err := storage.Save(ctx, page); err != nil {
 			return err
 		}
 
-		msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgSaved)
+		msgConfig := tgApi.NewMessage(msg.Chat.ID, sendMsg)
 		_, err = tgBot.Send(msgConfig)
 		if err != nil {
 			return err
@@ -154,25 +150,21 @@ func SaveSimple(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.
 			URL:      msg.Text,
 		}
 
+		sendMsg := messages.MsgSaved
+
 		isExists, err := storage.IsExists(ctx, page)
 		if err != nil {
 			return err
 		}
 		if isExists {
-			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgAlreadyExists)
-			_, err = tgBot.Send(msgConfig)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			sendMsg = messages.MsgAlreadyExists
 		}
 
 		if err := storage.Save(ctx, page); err != nil {
 			return err
 		}
 
-		msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgSaved)
+		msgConfig := tgApi.NewMessage(msg.Chat.ID, sendMsg)
 		_, err = tgBot.Send(msgConfig)
 		if err != nil {
 			return err
