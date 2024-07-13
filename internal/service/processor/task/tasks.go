@@ -10,6 +10,7 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/internal/service/processor"
 	"github.com/mike7109/tg-bot-clubbing/pkg/messages"
 	"log"
+	"regexp"
 )
 
 func Start(ctx context.Context, tgBot *tgApi.BotAPI) processor.ProcessingFunc {
@@ -70,9 +71,40 @@ func Rnd(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage
 
 func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
 	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
+		// Регулярное выражение для разбора команды /add
+		re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+?))?(?:\s+(.+?))?(?:\s+(.+?))?$`)
+		matches := re.FindStringSubmatch(msg.Text)
+
+		if len(matches) == 0 {
+			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidAddCommand)
+			_, err := tgBot.Send(msgConfig)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		url := matches[1]
+
+		var description, title, category *string
+
+		if len(matches) > 2 {
+			description = &matches[2]
+		}
+		if len(matches) > 3 {
+			category = &matches[3]
+		}
+		if len(matches) > 4 {
+			title = &matches[4]
+		}
+
 		page := &entity.Page{
-			URL:      msg.Text,
-			UserName: msg.From.UserName,
+			UserName:    msg.From.UserName,
+			URL:         url,
+			Title:       title,
+			Category:    category,
+			Description: description,
 		}
 
 		isExists, err := storage.IsExists(ctx, page)

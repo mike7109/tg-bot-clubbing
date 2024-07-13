@@ -1,29 +1,27 @@
 package entity
 
 import (
-	"crypto/sha1"
 	"errors"
-	"fmt"
-	"io"
 )
 
 var ErrNoSavedPages = errors.New("no saved pages")
 
 type Page struct {
-	URL      string
-	UserName string
+	URL         string
+	UserName    string
+	Description *string
+	Title       *string
+	Category    *string
 }
 
-func (p Page) Hash() (string, error) {
-	h := sha1.New()
+func (p *Page) SetDescription(description string) {
+	p.Description = &description
+}
 
-	if _, err := io.WriteString(h, p.URL); err != nil {
-		return "", fmt.Errorf("can't calculate hash: %w", err)
-	}
+func (p *Page) SetTitle(name string) {
+	p.Title = &name
+}
 
-	if _, err := io.WriteString(h, p.UserName); err != nil {
-		return "", fmt.Errorf("can't calculate hash: %w", err)
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
+func (p *Page) SetCategory(category string) {
+	p.Category = &category
 }
