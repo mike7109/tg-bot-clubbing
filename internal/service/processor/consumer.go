@@ -5,14 +5,10 @@ import (
 	"fmt"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mike7109/tg-bot-clubbing/pkg/commands"
+	"github.com/mike7109/tg-bot-clubbing/pkg/messages"
 	"github.com/mike7109/tg-bot-clubbing/pkg/utls"
 	"go.uber.org/zap"
 	"strings"
-)
-
-const (
-	ErrorHandler    = "Произошла ошибка"
-	NotFoundHandler = "Я не знаю такой команды"
 )
 
 type ProcessingFunc func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error
@@ -31,12 +27,12 @@ func NewTaskProcessor(tgBot *tgApi.BotAPI) TaskProcessor {
 
 	defaultErrorHandler := func(ctx context.Context, err error, update tgApi.Update) {
 		fmt.Println("Failed to process update, rejecting", zap.String("Text", update.Message.Text), err)
-		_, _ = tgBot.Send(tgApi.NewMessage(update.Message.Chat.ID, ErrorHandler))
+		_, _ = tgBot.Send(tgApi.NewMessage(update.Message.Chat.ID, messages.ErrorHandler))
 	}
 
 	defaultProcessorNotFoundHandler := func(ctx context.Context, updates tgApi.Update) {
 		fmt.Println("No processor found for update type", zap.String("Text", updates.Message.Text))
-		_, _ = tgBot.Send(tgApi.NewMessage(updates.Message.Chat.ID, NotFoundHandler))
+		_, _ = tgBot.Send(tgApi.NewMessage(updates.Message.Chat.ID, messages.MsgUnknownCommand))
 	}
 
 	return TaskProcessor{
