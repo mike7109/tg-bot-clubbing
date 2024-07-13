@@ -73,6 +73,9 @@ func Rnd(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage
 
 func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
 	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
+		if !strings.Contains(msg.Text, "/add") {
+			msg.Text = "/add " + msg.Text
+		}
 
 		re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+))?(?:\s+(.+?))?$`)
 
