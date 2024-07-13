@@ -87,7 +87,7 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		}
 
 		url := matches[1]
-		if utls.IsURL(url) {
+		if !utls.IsURL(url) {
 			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidUrl)
 			_, err := tgBot.Send(msgConfig)
 			if err != nil {
