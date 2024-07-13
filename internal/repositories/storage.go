@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/mike7109/tg-bot-clubbing/internal/entity"
 )
@@ -34,7 +35,7 @@ func (s *Storage) PickRandom(ctx context.Context, userName string) (*entity.Page
 	var url string
 
 	err := s.db.QueryRowContext(ctx, q, userName).Scan(&url)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, entity.ErrNoSavedPages
 	}
 	if err != nil {
@@ -85,7 +86,9 @@ func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page,
 
 	rows, err := s.db.QueryContext(ctx, q, userName)
 	if err != nil {
-		return nil, fmt.Errorf("can't list pages: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, entity.ErrNoSavedPages
+		}
 	}
 
 	defer rows.Close()
