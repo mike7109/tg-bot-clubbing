@@ -15,7 +15,8 @@ const (
 	HelpCmd  = "/help"
 	StartCmd = "/start"
 
-	Add = "/add"
+	Add     = "/add"
+	ListUrl = "/list"
 )
 
 type TgProcessor struct {
@@ -45,6 +46,7 @@ func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, s
 	taskProcessor.AddTaskProcessor(HelpCmd, task.Help(ctx, tgBot))
 	taskProcessor.AddTaskProcessor(RndCmd, task.Rnd(ctx, tgBot, storage))
 	taskProcessor.AddTaskProcessor(Add, task.Save(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(ListUrl, task.ListUrl(ctx, tgBot, storage))
 
 	var wg sync.WaitGroup
 

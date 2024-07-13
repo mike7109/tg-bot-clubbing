@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"errors"
+	"fmt"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mike7109/tg-bot-clubbing/internal/entity"
 	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
@@ -37,7 +38,7 @@ func Help(ctx context.Context, tgBot *tgApi.BotAPI) processor.ProcessingFunc {
 
 func Rnd(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
 	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
-		page, err := storage.PickRandom(context.Background(), msg.From.UserName)
+		page, err := storage.PickRandom(ctx, msg.From.UserName)
 		if err != nil && !errors.Is(err, entity.ErrNoSavedPages) {
 			return err
 		}
@@ -74,7 +75,7 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			UserName: msg.From.UserName,
 		}
 
-		isExists, err := storage.IsExists(context.Background(), page)
+		isExists, err := storage.IsExists(ctx, page)
 		if err != nil {
 			return err
 		}
@@ -88,11 +89,43 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			return nil
 		}
 
-		if err := storage.Save(context.Background(), page); err != nil {
+		if err := storage.Save(ctx, page); err != nil {
 			return err
 		}
 
 		msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgSaved)
+		_, err = tgBot.Send(msgConfig)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
+	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
+		pages, err := storage.ListUrl(ctx, msg.From.UserName)
+		if err != nil && !errors.Is(err, entity.ErrNoSavedPages) {
+			return err
+		}
+
+		if errors.Is(err, entity.ErrNoSavedPages) {
+			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgNoSavedPages)
+			_, err = tgBot.Send(msgConfig)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		var urlList string
+		for i, page := range pages {
+			urlList += fmt.Sprintf("%d. %s\n", i+1, page.URL)
+		}
+
+		msgConfig := tgApi.NewMessage(msg.Chat.ID, urlList)
 		_, err = tgBot.Send(msgConfig)
 		if err != nil {
 			return err

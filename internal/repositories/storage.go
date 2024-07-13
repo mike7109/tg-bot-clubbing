@@ -69,3 +69,29 @@ func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error)
 
 	return count > 0, nil
 }
+
+// ListUrl returns list of saved pages.
+func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page, error) {
+	q := `SELECT url FROM pages WHERE user_name = ?`
+
+	rows, err := s.db.QueryContext(ctx, q, userName)
+	if err != nil {
+		return nil, fmt.Errorf("can't list pages: %w", err)
+	}
+	defer rows.Close()
+
+	var pages []*entity.Page
+	for rows.Next() {
+		var url string
+		if err := rows.Scan(&url); err != nil {
+			return nil, fmt.Errorf("can't scan page: %w", err)
+		}
+
+		pages = append(pages, &entity.Page{
+			URL:      url,
+			UserName: userName,
+		})
+	}
+
+	return pages, nil
+}
