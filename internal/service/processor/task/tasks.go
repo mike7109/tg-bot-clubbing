@@ -91,8 +91,8 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			return nil
 		}
 
-		url := strings.TrimSpace(matches[1])
-		if !utls.IsURL(url) {
+		urlTrim := strings.TrimSpace(matches[1])
+		if !utls.IsURL(urlTrim) {
 			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidUrl)
 			_, err := tgBot.Send(msgConfig)
 			if err != nil {
@@ -116,7 +116,7 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 
 		page := &entity.Page{
 			UserName:    msg.From.UserName,
-			URL:         url,
+			URL:         urlTrim,
 			Title:       title,
 			Category:    category,
 			Description: description,
