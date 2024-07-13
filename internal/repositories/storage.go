@@ -72,7 +72,7 @@ func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error)
 
 // ListUrl returns list of saved pages.
 func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page, error) {
-	q := `SELECT url FROM pages WHERE user_name = ?`
+	q := `SELECT url FROM pages WHERE user_name = ? ORDER BY created_at ASC`
 
 	rows, err := s.db.QueryContext(ctx, q, userName)
 	if err != nil {

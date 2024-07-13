@@ -6,6 +6,7 @@ import (
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 	"net/url"
+	"strings"
 )
 
 const (
@@ -54,8 +55,9 @@ func (c TaskProcessor) Consume(ctx context.Context, update tgApi.Update) {
 }
 
 func (c TaskProcessor) Process(ctx context.Context, update tgApi.Update) {
+	cmd := c.parseCommand(update)
 
-	processor, ok := c.routes[c.parseCommand(update)]
+	processor, ok := c.routes[cmd]
 	if !ok {
 		c.ProcessorNotFoundHandler(ctx, update)
 		return
@@ -71,6 +73,14 @@ func (c TaskProcessor) Process(ctx context.Context, update tgApi.Update) {
 }
 
 func (c TaskProcessor) parseCommand(update tgApi.Update) string {
+	text := update.Message.Text
+
+	// Разделяем текст на команду и остальную часть
+	parts := strings.SplitN(text, " ", 2)
+	if len(parts) > 1 {
+		return parts[0]
+	}
+
 	if isAddCmd(update.Message.Text) {
 		return "/add"
 	}

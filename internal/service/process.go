@@ -15,7 +15,7 @@ const (
 	HelpCmd  = "/help"
 	StartCmd = "/start"
 
-	Add     = "/add"
+	AddCmd  = "/add"
 	ListUrl = "/list"
 )
 
@@ -41,11 +41,11 @@ func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, s
 
 	taskProcessor := processor.NewTaskProcessor(tgBot)
 
-	// Add task processor
+	// AddCmd task processor
 	taskProcessor.AddTaskProcessor(StartCmd, task.Start(ctx, tgBot))
 	taskProcessor.AddTaskProcessor(HelpCmd, task.Help(ctx, tgBot))
 	taskProcessor.AddTaskProcessor(RndCmd, task.Rnd(ctx, tgBot, storage))
-	taskProcessor.AddTaskProcessor(Add, task.Save(ctx, tgBot, storage))
+	taskProcessor.AddTaskProcessor(AddCmd, task.Save(ctx, tgBot, storage))
 	taskProcessor.AddTaskProcessor(ListUrl, task.ListUrl(ctx, tgBot, storage))
 
 	var wg sync.WaitGroup
