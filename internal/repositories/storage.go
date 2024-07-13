@@ -57,6 +57,15 @@ func (s *Storage) Remove(ctx context.Context, page *entity.Page) error {
 	return nil
 }
 
+func (s *Storage) DeleteAll(ctx context.Context, userName string) error {
+	q := `DELETE FROM pages WHERE user_name = ?`
+	if _, err := s.db.ExecContext(ctx, q, userName); err != nil {
+		return fmt.Errorf("can't remove page: %w", err)
+	}
+
+	return nil
+}
+
 // IsExists checks if page exists in storage.
 func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error) {
 	q := `SELECT COUNT(*) FROM pages WHERE url = ? AND user_name = ?`

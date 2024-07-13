@@ -212,3 +212,20 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Sto
 		return nil
 	}
 }
+
+func DeleteAll(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
+	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
+		err := storage.DeleteAll(ctx, msg.From.UserName)
+		if err != nil {
+			return err
+		}
+
+		msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgDeletedAll)
+		_, err = tgBot.Send(msgConfig)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
