@@ -71,7 +71,7 @@ func Rnd(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage
 
 func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
 	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
-		// Регулярное выражение для разбора команды /add
+
 		re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+?))?(?:\s+(.+?))?(?:\s+(.+?))?$`)
 		matches := re.FindStringSubmatch(msg.Text)
 
@@ -105,6 +105,41 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			Title:       title,
 			Category:    category,
 			Description: description,
+		}
+
+		isExists, err := storage.IsExists(ctx, page)
+		if err != nil {
+			return err
+		}
+		if isExists {
+			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgAlreadyExists)
+			_, err = tgBot.Send(msgConfig)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if err := storage.Save(ctx, page); err != nil {
+			return err
+		}
+
+		msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgSaved)
+		_, err = tgBot.Send(msgConfig)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func SaveSimple(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
+	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
+		page := &entity.Page{
+			UserName: msg.From.UserName,
+			URL:      msg.Text,
 		}
 
 		isExists, err := storage.IsExists(ctx, page)

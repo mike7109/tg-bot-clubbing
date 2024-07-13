@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mike7109/tg-bot-clubbing/internal/service"
 	"go.uber.org/zap"
 	"net/url"
 	"strings"
@@ -82,7 +83,7 @@ func (c TaskProcessor) parseCommand(update tgApi.Update) string {
 	}
 
 	if isAddCmd(update.Message.Text) {
-		return "/add " + strings.TrimSpace(update.Message.Text)
+		return service.AddSimpleCmd
 	}
 
 	return update.Message.Text
