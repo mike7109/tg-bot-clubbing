@@ -12,6 +12,7 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/pkg/utls"
 	"log"
 	"regexp"
+	"strings"
 )
 
 func Start(ctx context.Context, tgBot *tgApi.BotAPI) processor.ProcessingFunc {
@@ -87,7 +88,7 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 			return nil
 		}
 
-		url := matches[1]
+		url := strings.TrimSpace(matches[1])
 		if !utls.IsURL(url) {
 			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidUrl)
 			_, err := tgBot.Send(msgConfig)
