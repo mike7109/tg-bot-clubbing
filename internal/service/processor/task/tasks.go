@@ -73,7 +73,8 @@ func Rnd(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage
 func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storage) processor.ProcessingFunc {
 	return func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error {
 
-		re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+?))?(?:\s+(.+?))?(?:\s+(.+?))?$`)
+		re := regexp.MustCompile(`^/add\s+(\S+)(?:\s+(.+?))?(?:\s+(.+))?(?:\s+(.+?))?$`)
+
 		matches := re.FindStringSubmatch(msg.Text)
 
 		if len(matches) == 0 {
@@ -104,6 +105,9 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		}
 		if len(matches) > 3 {
 			title = &matches[3]
+		}
+		if len(matches) > 4 {
+			description = &matches[4]
 		}
 
 		page := &entity.Page{
