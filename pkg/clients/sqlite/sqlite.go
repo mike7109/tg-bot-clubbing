@@ -64,12 +64,5 @@ func createTable(db *sql.DB) error {
 		return fmt.Errorf("can't create table: %w", err)
 	}
 
-	q = `CREATE UNIQUE INDEX idx_pages_url_user_name ON pages (url, user_name);`
-
-	_, err = db.ExecContext(ctx, q)
-	if err != nil {
-		return fmt.Errorf("can't create table: %w", err)
-	}
-
 	return nil
 }
