@@ -8,6 +8,11 @@ import (
 	"net/url"
 )
 
+const (
+	ErrorHandler    = "Произошла ошибка"
+	NotFoundHandler = "Я не знаю такой команды"
+)
+
 type ProcessingFunc func(ctx context.Context, update tgApi.Update, msg *tgApi.Message) error
 
 type TaskProcessor struct {
@@ -24,12 +29,12 @@ func NewTaskProcessor(tgBot *tgApi.BotAPI) TaskProcessor {
 
 	defaultErrorHandler := func(ctx context.Context, err error, update tgApi.Update) {
 		fmt.Println("Failed to process update, rejecting", zap.String("Text", update.Message.Text), err)
-		_, _ = tgBot.Send(tgApi.NewMessage(update.Message.Chat.ID, "Произошла ошибка"))
+		_, _ = tgBot.Send(tgApi.NewMessage(update.Message.Chat.ID, ErrorHandler))
 	}
 
 	defaultProcessorNotFoundHandler := func(ctx context.Context, updates tgApi.Update) {
 		fmt.Println("No processor found for update type", zap.String("Text", updates.Message.Text))
-		_, _ = tgBot.Send(tgApi.NewMessage(updates.Message.Chat.ID, "Я не знаю такой команды"))
+		_, _ = tgBot.Send(tgApi.NewMessage(updates.Message.Chat.ID, NotFoundHandler))
 	}
 
 	return TaskProcessor{
