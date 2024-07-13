@@ -323,7 +323,7 @@ func ClassifyLink(description string) (*string, error) {
 		return nil, err
 	}
 
-	if len(classificationResp.Labels) > 0 && classificationResp.Scores[0] > 0.35 {
+	if len(classificationResp.Labels) > 0 && classificationResp.Scores[0] > 0.5 {
 		return &classificationResp.Labels[0], nil
 	}
 
