@@ -48,11 +48,12 @@ func createTable(db *sql.DB) error {
 
 	q := `
 			CREATE TABLE IF NOT EXISTS pages (
-			id UUID PRIMARY KEY,
+			id integer primary key,
 			url TEXT NOT NULL,
 			user_name TEXT NOT NULL,
 			name TEXT,
 			description TEXT,
+			category TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 	`

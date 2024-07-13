@@ -38,7 +38,7 @@ func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, s
 	u := tgApi.NewUpdate(0)
 	u.Timeout = 60
 
-	taskProcessor := processor.NewTaskProcessor()
+	taskProcessor := processor.NewTaskProcessor(tgBot)
 
 	// Add task processor
 	taskProcessor.AddTaskProcessor(StartCmd, task.Start(ctx, tgBot))
