@@ -100,13 +100,10 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		var description, title, category *string
 
 		if len(matches) > 2 {
-			description = &matches[2]
+			category = &matches[2]
 		}
 		if len(matches) > 3 {
-			category = &matches[3]
-		}
-		if len(matches) > 4 {
-			title = &matches[4]
+			title = &matches[3]
 		}
 
 		page := &entity.Page{
@@ -200,18 +197,15 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Sto
 		var urlList string
 		for i, page := range pages {
 			urlList += fmt.Sprintf("%d. %s ", i+1, page.URL)
-			if page.Title != nil {
-				urlList += fmt.Sprintf("%s ", *page.Title)
-			}
-
-			if page.Description != nil {
-				urlList += fmt.Sprintf("%s ", *page.Description)
-			}
-
 			if page.Category != nil {
 				urlList += fmt.Sprintf("%s ", *page.Category)
 			}
-
+			if page.Title != nil {
+				urlList += fmt.Sprintf("%s ", *page.Title)
+			}
+			if page.Description != nil {
+				urlList += fmt.Sprintf("%s ", *page.Description)
+			}
 			urlList += "\n"
 		}
 
