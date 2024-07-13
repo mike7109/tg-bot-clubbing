@@ -87,6 +87,16 @@ func Save(ctx context.Context, tgBot *tgApi.BotAPI, storage *repositories.Storag
 		matches := re.FindStringSubmatch(msg.Text)
 
 		if len(matches) == 0 {
+			if strings.Contains(msg.Text, "/add") {
+				msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgAddUrl)
+				_, err := tgBot.Send(msgConfig)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}
+
 			msgConfig := tgApi.NewMessage(msg.Chat.ID, messages.MsgInvalidAddCommand)
 			_, err := tgBot.Send(msgConfig)
 			if err != nil {
