@@ -75,9 +75,16 @@ func (c TaskProcessor) parseCommand(update tgApi.Update) string {
 	// Разделяем текст на команду и остальную часть
 	parts := strings.SplitN(text, " ", 2)
 
-	if utls.IsAddCmd(parts[0]) {
-		return commands.AddCmd
+	if len(parts) > 1 {
+		if utls.IsAddCmd(parts[0]) {
+			return commands.AddCmd
+		}
+		return parts[0]
 	}
 
-	return parts[0]
+	if utls.IsAddCmd(update.Message.Text) {
+		return commands.AddSimpleCmd
+	}
+
+	return update.Message.Text
 }
