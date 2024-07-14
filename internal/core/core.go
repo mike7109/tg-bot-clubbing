@@ -7,6 +7,7 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/internal/config"
 	"github.com/mike7109/tg-bot-clubbing/internal/repositories"
 	"github.com/mike7109/tg-bot-clubbing/internal/service"
+	"github.com/mike7109/tg-bot-clubbing/internal/transport/worker"
 	"github.com/mike7109/tg-bot-clubbing/pkg/clients/sqlite"
 	"github.com/mike7109/tg-bot-clubbing/pkg/clients/telegram"
 	"log"
@@ -35,12 +36,14 @@ func New() error {
 
 	storage := repositories.NewStorage(db)
 
+	tgBotService := service.NewTgBotService(storage)
+
 	tgClient := telegram.NewTelegramClient(cfg.Telegram.Token, cfg.Debug.Telegram)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
-	p, err := service.NewTgProcessor(ctx, tgClient, storage)
+	p, err := worker.NewTgProcessor(ctx, tgClient, tgBotService)
 	if err != nil {
 		log.Fatal("can't create telegram processor: ", err)
 	}

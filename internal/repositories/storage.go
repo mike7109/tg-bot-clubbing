@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/mike7109/tg-bot-clubbing/internal/apperrors"
 	"github.com/mike7109/tg-bot-clubbing/internal/entity"
 )
 
@@ -36,7 +37,7 @@ func (s *Storage) PickRandom(ctx context.Context, userName string) (*entity.Page
 
 	err := s.db.QueryRowContext(ctx, q, userName).Scan(&url)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, entity.ErrNoSavedPages
+		return nil, apperrors.ErrNoSavedPages
 	}
 	if err != nil {
 		return nil, fmt.Errorf("can't pick random page: %w", err)
@@ -48,10 +49,9 @@ func (s *Storage) PickRandom(ctx context.Context, userName string) (*entity.Page
 	}, nil
 }
 
-// Remove removes page from storage.
-func (s *Storage) Remove(ctx context.Context, page *entity.Page) error {
-	q := `DELETE FROM pages WHERE url = ? AND user_name = ?`
-	if _, err := s.db.ExecContext(ctx, q, page.URL, page.UserName); err != nil {
+func (s *Storage) DeleteUrl(ctx context.Context, id int, userName string) error {
+	q := `DELETE FROM pages WHERE id = ? AND user_name = ?`
+	if _, err := s.db.ExecContext(ctx, q, id, userName); err != nil {
 		return fmt.Errorf("can't remove page: %w", err)
 	}
 
@@ -82,29 +82,35 @@ func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error)
 
 // ListUrl returns list of saved pages.
 func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page, error) {
-	q := `SELECT url, name, description, category FROM pages WHERE user_name = ? ORDER BY created_at ASC`
+	q := `SELECT id, url, name, description, category FROM pages WHERE user_name = ? ORDER BY created_at ASC`
 
 	rows, err := s.db.QueryContext(ctx, q, userName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, entity.ErrNoSavedPages
+			return nil, apperrors.ErrNoSavedPages
 		}
 
 		return nil, fmt.Errorf("can't list pages: %w", err)
 	}
 	defer rows.Close()
 
+	number := 1
+
 	var pages []*entity.Page
 	for rows.Next() {
 		page := &entity.Page{UserName: userName}
-		if err = rows.Scan(&page.URL, &page.Title, &page.Description, &page.Category); err != nil {
+		if err = rows.Scan(&page.ID, &page.URL, &page.Title, &page.Description, &page.Category); err != nil {
 			return nil, fmt.Errorf("can't scan page: %w", err)
 		}
+
+		page.Metadata.Number = number
+
 		pages = append(pages, page)
+		number++
 	}
 
 	if len(pages) == 0 {
-		return nil, entity.ErrNoSavedPages
+		return nil, apperrors.ErrNoSavedPages
 	}
 
 	return pages, nil

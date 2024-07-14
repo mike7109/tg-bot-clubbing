@@ -1,5 +1,7 @@
 package messages
 
+import tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 const MsgHello = `Привет! Я LinkKeeper Bot. Я помогу тебе хранить и организовывать ссылки. 
 Для начала работы ты можешь добавить новую ссылку просто отправив её, чтобы посмотреть список используй /list. 
 Для получения списка всех команд используй /help.`
@@ -28,4 +30,35 @@ const (
 	MsgInvalidUrl        = "Неверный формат ссылки. Попробуйте еще раз 🤔"
 	MsgDeletedAll        = "Все ваши страницы удалены! 🗑"
 	ErrorHandler         = "Произошла ошибка 🤯"
+	ErrNoUserName        = "Извините, но для использования бота необходимо установить имя пользователя в настройках Telegram"
+	MsgDeleted           = "Страница удалена! 🗑"
 )
+
+func SendMessage(tgBot *tgApi.BotAPI, chatID int64, text string) error {
+	msgConfig := tgApi.NewMessage(chatID, text)
+	_, err := tgBot.Send(msgConfig)
+	return err
+}
+
+func SendMessageDisableWebPagePreview(tgBot *tgApi.BotAPI, chatID int64, text string) error {
+	msgConfig := tgApi.NewMessage(chatID, text)
+	msgConfig.DisableWebPagePreview = true
+	_, err := tgBot.Send(msgConfig)
+	return err
+}
+
+func SendInvalidUrlMessage(tgBot *tgApi.BotAPI, chatID int64) error {
+	return SendMessage(tgBot, chatID, MsgInvalidUrl)
+}
+
+func SendNoSavedPagesMessage(tgBot *tgApi.BotAPI, chatID int64) error {
+	return SendMessage(tgBot, chatID, MsgNoSavedPages)
+}
+
+func SendErrorHandler(tgBot *tgApi.BotAPI, chatID int64) error {
+	return SendMessage(tgBot, chatID, ErrorHandler)
+}
+
+func SendErrNoUserName(tgBot *tgApi.BotAPI, chatID int64) error {
+	return SendMessage(tgBot, chatID, ErrNoUserName)
+}

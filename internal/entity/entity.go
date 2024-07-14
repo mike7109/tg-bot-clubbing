@@ -1,17 +1,24 @@
 package entity
 
 import (
-	"errors"
+	"fmt"
+	"github.com/mike7109/tg-bot-clubbing/internal/transport/worker/update_entity/button"
+	"strconv"
 )
 
-var ErrNoSavedPages = errors.New("no saved pages")
-
 type Page struct {
+	ID          int
 	URL         string
 	UserName    string
 	Description *string
 	Title       *string
 	Category    *string
+	Metadata    Metadata
+}
+
+type Metadata struct {
+	Views  int
+	Number int
 }
 
 func (p *Page) SetDescription(description string) {
@@ -24,4 +31,14 @@ func (p *Page) SetTitle(name string) {
 
 func (p *Page) SetCategory(category string) {
 	p.Category = &category
+}
+
+func (p *Page) String() string {
+	return fmt.Sprintf("%d. %s\n", p.Metadata.Number, p.URL)
+}
+
+func (p *Page) ToButton(cmd button.Command) *button.Button {
+	b := button.NewButton(strconv.Itoa(p.Metadata.Number), cmd)
+	button.SetDataValue(b, "id", p.ID)
+	return b
 }
