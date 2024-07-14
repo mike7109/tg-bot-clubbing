@@ -19,7 +19,7 @@ func NewStorage(db *sql.DB) *Storage {
 }
 
 // Save saves page to storage.
-func (s *Storage) Save(ctx context.Context, p *entity.Page) error {
+func (s *Storage) Save(ctx context.Context, p *entity.UrlPage) error {
 	q := `INSERT OR REPLACE INTO pages (url, user_name, name, description, category) VALUES (?, ?, ?, ?, ?);`
 
 	if _, err := s.db.ExecContext(ctx, q, p.URL, p.UserName, p.Title, p.Description, p.Category); err != nil {
@@ -30,7 +30,7 @@ func (s *Storage) Save(ctx context.Context, p *entity.Page) error {
 }
 
 // PickRandom picks random page from storage.
-func (s *Storage) PickRandom(ctx context.Context, userName string) (*entity.Page, error) {
+func (s *Storage) PickRandom(ctx context.Context, userName string) (*entity.UrlPage, error) {
 	q := `SELECT url FROM pages WHERE user_name = ? ORDER BY RANDOM() LIMIT 1`
 
 	var url string
@@ -43,7 +43,7 @@ func (s *Storage) PickRandom(ctx context.Context, userName string) (*entity.Page
 		return nil, fmt.Errorf("can't pick random page: %w", err)
 	}
 
-	return &entity.Page{
+	return &entity.UrlPage{
 		URL:      url,
 		UserName: userName,
 	}, nil
@@ -68,7 +68,7 @@ func (s *Storage) DeleteAll(ctx context.Context, userName string) error {
 }
 
 // IsExists checks if page exists in storage.
-func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error) {
+func (s *Storage) IsExists(ctx context.Context, page *entity.UrlPage) (bool, error) {
 	q := `SELECT COUNT(*) FROM pages WHERE url = ? AND user_name = ?`
 
 	var count int
@@ -81,7 +81,7 @@ func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error)
 }
 
 // ListUrl returns list of saved pages.
-func (s *Storage) ListUrl(ctx context.Context, userName string, offset int, limit int) ([]*entity.Page, error) {
+func (s *Storage) ListUrl(ctx context.Context, userName string, offset int, limit int) ([]*entity.UrlPage, error) {
 	q := `
 			SELECT id, url, name, description, category FROM pages WHERE user_name = ? ORDER BY created_at ASC LIMIT ? OFFSET ?;
 		`
@@ -98,9 +98,9 @@ func (s *Storage) ListUrl(ctx context.Context, userName string, offset int, limi
 
 	number := 1
 
-	var pages []*entity.Page
+	var pages []*entity.UrlPage
 	for rows.Next() {
-		page := &entity.Page{UserName: userName}
+		page := &entity.UrlPage{UserName: userName}
 		if err = rows.Scan(&page.ID, &page.URL, &page.Title, &page.Description, &page.Category); err != nil {
 			return nil, fmt.Errorf("can't scan page: %w", err)
 		}

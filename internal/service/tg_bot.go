@@ -12,9 +12,9 @@ type ITgBotService interface {
 	StartHandler() string
 	HelpHandler() string
 	SaveHandler(ctx context.Context, page *dto.SavePage) (string, error)
-	ListHandler(ctx context.Context, userName string, offset int) ([]*entity.Page, error)
+	ListHandler(ctx context.Context, userName string, offset int) ([]*entity.UrlPage, error)
 	DeleteHandler(ctx context.Context, id int, userName string) error
-	GetPageHandler(ctx context.Context, userName string, page, pageSize int) ([]*entity.Page, error)
+	GetPageHandler(ctx context.Context, userName string, page, pageSize int) ([]*entity.UrlPage, error)
 	CountHandler(ctx context.Context, userName string) (int, error)
 }
 
@@ -45,7 +45,7 @@ func (t TgBotService) SaveHandler(ctx context.Context, page *dto.SavePage) (stri
 	return messages.MsgSaved, nil
 }
 
-func (t TgBotService) ListHandler(ctx context.Context, userName string, offset int) ([]*entity.Page, error) {
+func (t TgBotService) ListHandler(ctx context.Context, userName string, offset int) ([]*entity.UrlPage, error) {
 	pages, err := t.storage.ListUrl(ctx, userName, offset, 10)
 	if err != nil {
 		return nil, apperrors.ErrNoPages
@@ -62,7 +62,7 @@ func (t TgBotService) DeleteHandler(ctx context.Context, id int, userName string
 	return t.storage.DeleteUrl(ctx, id, userName)
 }
 
-func (t TgBotService) GetPageHandler(ctx context.Context, userName string, page, pageSize int) ([]*entity.Page, error) {
+func (t TgBotService) GetPageHandler(ctx context.Context, userName string, page, pageSize int) ([]*entity.UrlPage, error) {
 	offset := (page) * pageSize
 
 	pages, err := t.storage.ListUrl(ctx, userName, offset, pageSize)

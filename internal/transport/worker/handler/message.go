@@ -97,7 +97,7 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service.ITgB
 			return messages.SendNoSavedPagesMessage(tgBot, chatID)
 		}
 
-		msg := createListMsg(pages, msgUpdate.Chat.ID, countPage)
+		msg := createListMsgNew(pages, msgUpdate.Chat.ID, countPage)
 
 		_, err = tgBot.Send(msg)
 
@@ -105,7 +105,7 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service.ITgB
 	}
 }
 
-func createListMsg(pages []*entity.Page, chatID int64, countPage int) tgApi.Chattable {
+func createListMsg(pages []*entity.UrlPage, chatID int64, countPage int) tgApi.Chattable {
 	var msg string
 
 	builder := button.NewBuilder()
@@ -131,6 +131,51 @@ func createListMsg(pages []*entity.Page, chatID int64, countPage int) tgApi.Chat
 
 	but := button.NewButton("Удалить по номерам", button.WantToDeleteCommand)
 	button.SetDataValue(but, "p", 0)
+	builder.AddButton(but)
+
+	for _, page := range pages {
+		msg += page.String()
+	}
+
+	keyboard := builder.Build()
+
+	msgConfig := tgApi.NewMessage(chatID, msg)
+	msgConfig.DisableWebPagePreview = true
+	msgConfig.ReplyMarkup = keyboard
+
+	return msgConfig
+}
+
+func createListMsgNew(pages []*entity.UrlPage, chatID int64, countPage int) tgApi.Chattable {
+	var msg string
+
+	builder := button.NewBuilder()
+
+	var lastPage int
+
+	coinPageDiv := countPage % 10
+	if coinPageDiv == 0 {
+		lastPage = (countPage - 1) / 10
+	} else {
+		lastPage = countPage / 10
+	}
+
+	if countPage > 10 {
+		butNext := button.NewButton(">", button.ListCommand)
+		button.SetDataValue(butNext, "p", 1)
+		button.SetDataValue(butNext, "d", 0)
+		button.SetDataValue(butNext, "c", button.SwitchPageCommandButton)
+
+		butEnd := button.NewButton(">>", button.ListCommand)
+		button.SetDataValue(butEnd, "p", lastPage)
+		button.SetDataValue(butEnd, "d", 0)
+		button.SetDataValue(butEnd, "c", button.SwitchPageCommandButton)
+		builder.AddButtonTopRows(butNext, butEnd)
+	}
+
+	but := button.NewButton("Удалить по номерам", button.ListCommand)
+	button.SetDataValue(but, "p", 0)
+	button.SetDataValue(but, "c", button.WantToDeleteURLCommandButton)
 	builder.AddButton(but)
 
 	for _, page := range pages {

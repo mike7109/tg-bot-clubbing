@@ -33,8 +33,8 @@ func (p *SavePage) SetCategory(category string) {
 	p.Category = &category
 }
 
-func (p *SavePage) ToEntity() *entity.Page {
-	return &entity.Page{
+func (p *SavePage) ToEntity() *entity.UrlPage {
+	return &entity.UrlPage{
 		URL:         p.Url,
 		UserName:    p.UserName,
 		Description: p.Description,

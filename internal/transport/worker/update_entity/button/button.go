@@ -13,9 +13,16 @@ const (
 	WantToDeleteCommand       Command = "2"
 	CancelWantToDeleteCommand Command = "3"
 	NextPageCommand           Command = "4"
-	EndPageCommand            Command = "5"
-	PrevPageCommand           Command = "6"
-	FirstPageCommand          Command = "7"
+	ListCommand               Command = "5"
+)
+
+type CommandButton string
+
+const (
+	SwitchPageCommandButton            CommandButton = "1"
+	DeleteURLCommandButton             CommandButton = "2"
+	WantToDeleteURLCommandButton       CommandButton = "3"
+	CancelWantToDeleteURLCommandButton CommandButton = "4"
 )
 
 type Button struct {

@@ -7,6 +7,12 @@ import (
 )
 
 type Page struct {
+	UrlPage     []*UrlPage
+	currentPage int
+	pageSize    int
+}
+
+type UrlPage struct {
 	ID          int
 	URL         string
 	UserName    string
@@ -21,23 +27,23 @@ type Metadata struct {
 	Number int
 }
 
-func (p *Page) SetDescription(description string) {
+func (p *UrlPage) SetDescription(description string) {
 	p.Description = &description
 }
 
-func (p *Page) SetTitle(name string) {
+func (p *UrlPage) SetTitle(name string) {
 	p.Title = &name
 }
 
-func (p *Page) SetCategory(category string) {
+func (p *UrlPage) SetCategory(category string) {
 	p.Category = &category
 }
 
-func (p *Page) String() string {
+func (p *UrlPage) String() string {
 	return fmt.Sprintf("%d. %s\n", p.Metadata.Number, p.URL)
 }
 
-func (p *Page) ToButton(cmd button.Command) *button.Button {
+func (p *UrlPage) ToButton(cmd button.Command) *button.Button {
 	b := button.NewButton(strconv.Itoa(p.Metadata.Number), cmd)
 	button.SetDataValue(b, "id", p.ID)
 	return b

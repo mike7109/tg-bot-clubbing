@@ -6,11 +6,11 @@ import (
 )
 
 type IStorage interface {
-	Save(ctx context.Context, p *entity.Page) error
-	PickRandom(ctx context.Context, userName string) (*entity.Page, error)
+	Save(ctx context.Context, p *entity.UrlPage) error
+	PickRandom(ctx context.Context, userName string) (*entity.UrlPage, error)
 	DeleteUrl(ctx context.Context, id int, userName string) error
 	DeleteAll(ctx context.Context, userName string) error
-	IsExists(ctx context.Context, p *entity.Page) (bool, error)
-	ListUrl(ctx context.Context, userName string, offset int, limit int) ([]*entity.Page, error)
+	IsExists(ctx context.Context, p *entity.UrlPage) (bool, error)
+	ListUrl(ctx context.Context, userName string, offset int, limit int) ([]*entity.UrlPage, error)
 	CountPage(ctx context.Context, userName string) (int, error)
 }
