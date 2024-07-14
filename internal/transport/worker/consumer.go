@@ -42,6 +42,9 @@ func (p *TgProcessor) newTgProcessor(ctx context.Context, tgBot *tgApi.BotAPI, t
 
 	// AddCallback task processor
 	taskProcessor.AddHandlerCallback(button.DeleteCommand, handler.DeleteUrl(ctx, tgBot, tgBotService))
+	taskProcessor.AddHandlerCallback(button.WantToDeleteCommand, handler.WantToDeleteUrl(ctx, tgBot, tgBotService))
+	taskProcessor.AddHandlerCallback(button.CancelWantToDeleteCommand, handler.CancelWantToDeleteUrl(ctx, tgBot, tgBotService))
+	taskProcessor.AddHandlerCallback(button.NextPageCommand, handler.NextPageCommand(ctx, tgBot, tgBotService))
 
 	var wg sync.WaitGroup
 

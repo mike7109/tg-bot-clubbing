@@ -76,7 +76,7 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service.ITgB
 		userName := msgUpdate.From.UserName
 		chatID := msgUpdate.Chat.ID
 
-		pages, err := tgBotService.ListHandler(ctx, userName)
+		pages, err := tgBotService.GetPageHandler(ctx, userName, 0, 10)
 		if err != nil {
 			switch {
 			case errors.Is(err, apperrors.ErrNoPages):
@@ -88,7 +88,16 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service.ITgB
 			}
 		}
 
-		msg := createListMsg(pages, msgUpdate.Chat.ID)
+		countPage, err := tgBotService.CountHandler(ctx, userName)
+		if err != nil {
+			return err
+		}
+
+		if countPage == 0 {
+			return messages.SendNoSavedPagesMessage(tgBot, chatID)
+		}
+
+		msg := createListMsg(pages, msgUpdate.Chat.ID, countPage)
 
 		_, err = tgBot.Send(msg)
 
@@ -96,15 +105,36 @@ func ListUrl(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service.ITgB
 	}
 }
 
-func createListMsg(pages []*entity.Page, chatID int64) tgApi.Chattable {
+func createListMsg(pages []*entity.Page, chatID int64, countPage int) tgApi.Chattable {
 	var msg string
 
 	builder := button.NewBuilder()
 
+	var lastPage int
+
+	coinPageDiv := countPage % 10
+	if coinPageDiv == 0 {
+		lastPage = (countPage - 1) / 10
+	} else {
+		lastPage = countPage / 10
+	}
+
+	if countPage > 10 {
+		butNext := button.NewButton(">", button.NextPageCommand)
+		button.SetDataValue(butNext, "p", 1)
+		button.SetDataValue(butNext, "d", 0)
+		butEnd := button.NewButton(">>", button.NextPageCommand)
+		button.SetDataValue(butEnd, "p", lastPage)
+		button.SetDataValue(butEnd, "d", 0)
+		builder.AddButtonTopRows(butNext, butEnd)
+	}
+
+	but := button.NewButton("Удалить по номерам", button.WantToDeleteCommand)
+	button.SetDataValue(but, "p", 0)
+	builder.AddButton(but)
+
 	for _, page := range pages {
 		msg += page.String()
-		but := page.ToButton(button.DeleteCommand)
-		builder.AddButton(but)
 	}
 
 	keyboard := builder.Build()

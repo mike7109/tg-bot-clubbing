@@ -9,12 +9,18 @@ import (
 type Command string
 
 const (
-	DeleteCommand Command = "1"
+	DeleteCommand             Command = "1"
+	WantToDeleteCommand       Command = "2"
+	CancelWantToDeleteCommand Command = "3"
+	NextPageCommand           Command = "4"
+	EndPageCommand            Command = "5"
+	PrevPageCommand           Command = "6"
+	FirstPageCommand          Command = "7"
 )
 
 type Button struct {
 	Text    string                 `json:"-"`
-	Data    map[string]interface{} `json:"d"`
+	Data    map[string]interface{} `json:"d,omitempty"`
 	Command Command                `json:"c"`
 }
 

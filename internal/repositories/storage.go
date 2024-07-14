@@ -81,10 +81,12 @@ func (s *Storage) IsExists(ctx context.Context, page *entity.Page) (bool, error)
 }
 
 // ListUrl returns list of saved pages.
-func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page, error) {
-	q := `SELECT id, url, name, description, category FROM pages WHERE user_name = ? ORDER BY created_at ASC`
+func (s *Storage) ListUrl(ctx context.Context, userName string, offset int, limit int) ([]*entity.Page, error) {
+	q := `
+			SELECT id, url, name, description, category FROM pages WHERE user_name = ? ORDER BY created_at ASC LIMIT ? OFFSET ?;
+		`
 
-	rows, err := s.db.QueryContext(ctx, q, userName)
+	rows, err := s.db.QueryContext(ctx, q, userName, limit, offset)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, apperrors.ErrNoSavedPages
@@ -114,4 +116,16 @@ func (s *Storage) ListUrl(ctx context.Context, userName string) ([]*entity.Page,
 	}
 
 	return pages, nil
+}
+
+func (s *Storage) CountPage(ctx context.Context, userName string) (int, error) {
+	q := `SELECT COUNT(*) FROM pages WHERE user_name = ?`
+
+	var count int
+
+	if err := s.db.QueryRowContext(ctx, q, userName).Scan(&count); err != nil {
+		return 0, fmt.Errorf("can't count pages: %w", err)
+	}
+
+	return count, nil
 }
