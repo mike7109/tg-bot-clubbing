@@ -1,6 +1,8 @@
 package button
 
-import tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
 type Builder struct {
 	buttons                   []*Button
@@ -29,22 +31,22 @@ func (b *Builder) AddButtons(buttons ...*Button) {
 	b.buttons = append(b.buttons, buttons...)
 }
 
-func (b *Builder) AddButtonTopRow(button *Button) {
-	b.buttonsKeyboardTopRow = append(b.buttonsKeyboardTopRow, tgApi.NewInlineKeyboardButtonData(button.Text, Marshal(button)))
+func (b *Builder) AddButtonTopRow(but *Button) {
+	b.buttonsKeyboardTopRow = append(b.buttonsKeyboardTopRow, tgApi.NewInlineKeyboardButtonData(but.Text, Marshal(but)))
 }
 
 func (b *Builder) AddButtonTopRows(buttons ...*Button) {
-	for _, button := range buttons {
-		b.buttonsKeyboardTopRow = append(b.buttonsKeyboardTopRow, tgApi.NewInlineKeyboardButtonData(button.Text, Marshal(button)))
+	for _, but := range buttons {
+		b.buttonsKeyboardTopRow = append(b.buttonsKeyboardTopRow, tgApi.NewInlineKeyboardButtonData(but.Text, Marshal(but)))
 	}
 }
 
-func (b *Builder) AddButtonMiddleRow(button *Button) {
-	b.buttonsKeyboardMiddleRows = append(b.buttonsKeyboardMiddleRows, []tgApi.InlineKeyboardButton{tgApi.NewInlineKeyboardButtonData(button.Text, Marshal(button))})
+func (b *Builder) AddButtonMiddleRow(but *Button) {
+	b.buttonsKeyboardMiddleRows = append(b.buttonsKeyboardMiddleRows, []tgApi.InlineKeyboardButton{tgApi.NewInlineKeyboardButtonData(but.Text, Marshal(but))})
 }
 
-func (b *Builder) AddButtonBottomRow(button *Button) {
-	b.buttonsKeyboardBottomRow = append(b.buttonsKeyboardBottomRow, tgApi.NewInlineKeyboardButtonData(button.Text, Marshal(button)))
+func (b *Builder) AddButtonBottomRow(but *Button) {
+	b.buttonsKeyboardBottomRow = append(b.buttonsKeyboardBottomRow, tgApi.NewInlineKeyboardButtonData(but.Text, Marshal(but)))
 }
 
 func (b *Builder) Build() tgApi.InlineKeyboardMarkup {
@@ -54,8 +56,8 @@ func (b *Builder) Build() tgApi.InlineKeyboardMarkup {
 		b.buttonsKeyboardMiddleRows = append([][]tgApi.InlineKeyboardButton{b.buttonsKeyboardTopRow}, b.buttonsKeyboardMiddleRows...)
 	}
 
-	for i, button := range b.buttons {
-		row = append(row, tgApi.NewInlineKeyboardButtonData(button.Text, Marshal(button)))
+	for i, but := range b.buttons {
+		row = append(row, tgApi.NewInlineKeyboardButtonData(but.Text, Marshal(but)))
 
 		// Если набрали 5 кнопок в строке или это последняя кнопка
 		if (i+1)%5 == 0 || i == len(b.buttons)-1 {

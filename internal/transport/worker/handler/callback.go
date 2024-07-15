@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mike7109/tg-bot-clubbing/internal/apperrors"
 	"github.com/mike7109/tg-bot-clubbing/internal/entity"
@@ -25,43 +24,27 @@ func ListCallback(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service
 		chatID := callbackUpdate.Message.Chat.ID
 		messageID := callbackUpdate.Message.MessageID
 
-		page, exist := button.GetDataValue(buttonTarget, "p")
-		if !exist {
-			return fmt.Errorf("page not found in data")
+		listButton, err := buttonTarget.ToListButton()
+		if err != nil {
+			return err
 		}
 
-		pageInt := int(page.(float64))
+		WithDeleteButton := listButton.WithDelete
 
-		cmd, exist := button.GetDataValue(buttonTarget, "c")
-		if !exist {
-			return fmt.Errorf("cmd not found in data")
-		}
-
-		wantToDelete, exist := button.GetDataValue(buttonTarget, "d")
-		if !exist {
-			return fmt.Errorf("wantToDelete not found in data")
-		}
-
-		WithDeleteButton := int(wantToDelete.(float64))
-
-		switch button.CommandButton(cmd.(string)) {
+		switch listButton.Cmd {
 		case button.WantToDeleteURLCommandButton:
 			WithDeleteButton = 1
 		case button.CancelWantToDeleteURLCommandButton:
 			WithDeleteButton = 0
 		case button.SwitchPageCommandButton:
 		case button.DeleteURLCommandButton:
-			buttonID, exist := button.GetDataValue(buttonTarget, "id")
-			if !exist {
-				return fmt.Errorf("buttonID not found in data")
-			}
-			err := tgBotService.DeleteHandler(ctx, int(buttonID.(float64)), userName)
+			err = tgBotService.DeleteHandler(ctx, listButton.ID, userName)
 			if err != nil {
 				return err
 			}
 		}
 
-		pages, err := tgBotService.GetPageHandler(ctx, userName, pageInt, 10)
+		pages, err := tgBotService.GetPageHandler(ctx, userName, listButton.CurrentPage, 10)
 		if err != nil {
 			switch {
 			case errors.Is(err, apperrors.ErrNoPages):
@@ -80,7 +63,7 @@ func ListCallback(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service
 			return err
 		}
 
-		msg := CreateListPages(pages, chatID, messageID, pageInt, countPage, WithDeleteButton)
+		msg := CreateListPages(pages, chatID, messageID, listButton.CurrentPage, countPage, WithDeleteButton)
 
 		_, err = tgBot.Send(msg)
 
@@ -99,7 +82,7 @@ func CreateListPages(pages []*entity.UrlPage, chatID int64, MessageID int, numPa
 		button.SetDataValue(butPrev, "d", withDelete)
 		button.SetDataValue(butPrev, "c", button.SwitchPageCommandButton)
 		butFirst := button.NewButton("<<", button.ListCommand)
-		button.SetDataValue(butFirst, "p", 0)
+		button.SetDataValue(butFirst, "p", 1)
 		button.SetDataValue(butFirst, "d", withDelete)
 		button.SetDataValue(butFirst, "c", button.SwitchPageCommandButton)
 		builder.AddButtonTopRows(butFirst, butPrev)
@@ -133,8 +116,8 @@ func CreateListPages(pages []*entity.UrlPage, chatID int64, MessageID int, numPa
 			but := page.ToButton(button.ListCommand)
 			button.SetDataValue(but, "c", button.DeleteURLCommandButton)
 			button.SetDataValue(but, "p", numPage)
+			button.SetDataValue(but, "d", withDelete)
 			builder.AddButton(but)
-
 		}
 	}
 

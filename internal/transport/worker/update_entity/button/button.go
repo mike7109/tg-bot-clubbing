@@ -1,6 +1,7 @@
 package button
 
 import (
+	"fmt"
 	"github.com/mailru/easyjson"
 )
 
@@ -67,4 +68,33 @@ func GetDataValue(b *Button, key string) (interface{}, bool) {
 // SetDataValue function to set value to Data field
 func SetDataValue(b *Button, key string, value interface{}) {
 	b.Data[key] = value
+}
+
+func (b *Button) ToListButton() (*ListButton, error) {
+	out := &ListButton{}
+
+	cmd, exist := GetDataValue(b, "c")
+	if !exist {
+		return nil, fmt.Errorf("cmd not found in data")
+	}
+	out.Cmd = CommandButton(cmd.(string))
+
+	wantToDelete, exist := GetDataValue(b, "d")
+	if !exist {
+		return nil, fmt.Errorf("wantToDelete not found in data")
+	}
+
+	out.WithDelete = int(wantToDelete.(float64))
+
+	page, exist := GetDataValue(b, "p")
+	if !exist {
+		return nil, fmt.Errorf("page not found in data")
+	}
+	out.CurrentPage = int(page.(float64))
+
+	if id, exist := GetDataValue(b, "id"); exist {
+		out.ID = int(id.(float64))
+	}
+
+	return out, nil
 }

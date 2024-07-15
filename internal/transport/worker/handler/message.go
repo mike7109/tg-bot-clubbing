@@ -176,6 +176,7 @@ func createListMsgNew(pages []*entity.UrlPage, chatID int64, countPage int) tgAp
 	but := button.NewButton("Удалить по номерам", button.ListCommand)
 	button.SetDataValue(but, "p", 0)
 	button.SetDataValue(but, "c", button.WantToDeleteURLCommandButton)
+	button.SetDataValue(but, "d", 0)
 	builder.AddButton(but)
 
 	for _, page := range pages {
