@@ -82,7 +82,7 @@ func CreateListPages(pages []*entity.UrlPage, chatID int64, MessageID int, numPa
 		button.SetDataValue(butPrev, "d", withDelete)
 		button.SetDataValue(butPrev, "c", button.SwitchPageCommandButton)
 		butFirst := button.NewButton("<<", button.ListCommand)
-		button.SetDataValue(butFirst, "p", 1)
+		button.SetDataValue(butFirst, "p", 0)
 		button.SetDataValue(butFirst, "d", withDelete)
 		button.SetDataValue(butFirst, "c", button.SwitchPageCommandButton)
 		builder.AddButtonTopRows(butFirst, butPrev)
