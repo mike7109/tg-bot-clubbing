@@ -7,6 +7,7 @@ import (
 	"github.com/mike7109/tg-bot-clubbing/internal/apperrors"
 	"github.com/mike7109/tg-bot-clubbing/internal/entity"
 	"github.com/mike7109/tg-bot-clubbing/internal/service"
+	"github.com/mike7109/tg-bot-clubbing/internal/service/dto"
 	"github.com/mike7109/tg-bot-clubbing/internal/transport/worker/update_entity/button"
 	"github.com/mike7109/tg-bot-clubbing/pkg/messages"
 )
@@ -47,8 +48,8 @@ func ListCallback(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service
 		pages, err := tgBotService.GetPageHandler(ctx, userName, listButton.CurrentPage, 10)
 		if err != nil {
 			switch {
-			case errors.Is(err, apperrors.ErrNoPages):
-				msgZeroPage := editListMsgForNotPAge(chatID, messageID)
+			case errors.Is(err, apperrors.ErrNoUrl):
+				msgZeroPage := editListMsgForNotPage(chatID, messageID)
 				_, err = tgBot.Send(msgZeroPage)
 				return err
 			case errors.Is(err, apperrors.ErrNoSave):
@@ -58,12 +59,7 @@ func ListCallback(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service
 			}
 		}
 
-		countPage, err := tgBotService.CountHandler(ctx, userName)
-		if err != nil {
-			return err
-		}
-
-		msg := CreateListPages(pages, chatID, messageID, listButton.CurrentPage, countPage, WithDeleteButton)
+		msg := CreateListPages(pages, chatID, messageID, WithDeleteButton)
 
 		_, err = tgBot.Send(msg)
 
@@ -71,74 +67,50 @@ func ListCallback(ctx context.Context, tgBot *tgApi.BotAPI, tgBotService service
 	}
 }
 
-func CreateListPages(pages []*entity.UrlPage, chatID int64, MessageID int, numPage int, countPage int, withDelete int) tgApi.Chattable {
+func CreateListPages(listPage *dto.ListPage, chatID int64, MessageID int, withDelete int) tgApi.Chattable {
 	var msg string
-
 	builder := button.NewBuilder()
 
-	if numPage > 0 {
-		butPrev := button.NewButton("<", button.ListCommand)
-		button.SetDataValue(butPrev, "p", numPage-1)
-		button.SetDataValue(butPrev, "d", withDelete)
-		button.SetDataValue(butPrev, "c", button.SwitchPageCommandButton)
-		butFirst := button.NewButton("<<", button.ListCommand)
-		button.SetDataValue(butFirst, "p", 0)
-		button.SetDataValue(butFirst, "d", withDelete)
-		button.SetDataValue(butFirst, "c", button.SwitchPageCommandButton)
-		builder.AddButtonTopRows(butFirst, butPrev)
-	}
+	addNavigationButtons := func() {
+		if listPage.HavePrevPage {
+			builder.AddButtonTopRows(
+				createNavButton("<<", 0, withDelete),
+				createNavButton("<", listPage.NumPage-1, withDelete),
+			)
+		}
 
-	var lastPage int
-
-	coinPageDiv := countPage % 10
-	if coinPageDiv == 0 {
-		lastPage = (countPage - 1) / 10
-	} else {
-		lastPage = countPage / 10
-	}
-
-	if countPage > (numPage+1)*10 {
-		butNext := button.NewButton(">", button.ListCommand)
-		button.SetDataValue(butNext, "p", numPage+1)
-		button.SetDataValue(butNext, "d", withDelete)
-		button.SetDataValue(butNext, "c", button.SwitchPageCommandButton)
-		butEnd := button.NewButton(">>", button.ListCommand)
-		button.SetDataValue(butEnd, "p", lastPage)
-		button.SetDataValue(butEnd, "d", withDelete)
-		button.SetDataValue(butEnd, "c", button.SwitchPageCommandButton)
-
-		builder.AddButtonTopRows(butNext, butEnd)
-	}
-
-	for _, page := range pages {
-		msg += page.String()
-		if withDelete == 1 {
-			but := page.ToButton(button.ListCommand)
-			button.SetDataValue(but, "c", button.DeleteURLCommandButton)
-			button.SetDataValue(but, "p", numPage)
-			button.SetDataValue(but, "d", withDelete)
-			builder.AddButton(but)
+		if listPage.HaveNextPage {
+			builder.AddButtonTopRows(
+				createNavButton(">", listPage.NumPage+1, withDelete),
+				createNavButton(">>", listPage.LastPage, withDelete),
+			)
 		}
 	}
 
-	if withDelete == 0 {
-		wantToDeleteCommand := button.NewButton("Удалить по номерам", button.ListCommand)
-		button.SetDataValue(wantToDeleteCommand, "p", numPage)
-		button.SetDataValue(wantToDeleteCommand, "c", button.WantToDeleteURLCommandButton)
-		button.SetDataValue(wantToDeleteCommand, "d", 1)
-		builder.AddButtonBottomRow(wantToDeleteCommand)
+	addPageButtons := func() {
+		for _, page := range listPage.SavePage {
+			msg += page.String()
+			if withDelete == 1 {
+				builder.AddButton(createDeleteButton(page, listPage.NumPage, withDelete))
+			}
+		}
 	}
 
-	if withDelete == 1 {
-		wantToDeleteCommand := button.NewButton("Назад", button.ListCommand)
-		button.SetDataValue(wantToDeleteCommand, "p", numPage)
-		button.SetDataValue(wantToDeleteCommand, "c", button.CancelWantToDeleteURLCommandButton)
-		button.SetDataValue(wantToDeleteCommand, "d", 0)
-		builder.AddButtonBottomRow(wantToDeleteCommand)
+	addBottomButton := func() {
+		var bottomButton *button.Button
+		if withDelete == 0 {
+			bottomButton = createActionButton("Удалить по номерам", listPage.NumPage, 1, button.WantToDeleteURLCommandButton)
+		} else {
+			bottomButton = createActionButton("Назад", listPage.NumPage, 0, button.CancelWantToDeleteURLCommandButton)
+		}
+		builder.AddButtonBottomRow(bottomButton)
 	}
+
+	addNavigationButtons()
+	addPageButtons()
+	addBottomButton()
 
 	keyboard := builder.Build()
-
 	msgConfig := tgApi.NewEditMessageText(chatID, MessageID, msg)
 	msgConfig.DisableWebPagePreview = true
 	msgConfig.ReplyMarkup = &keyboard
@@ -146,7 +118,31 @@ func CreateListPages(pages []*entity.UrlPage, chatID int64, MessageID int, numPa
 	return msgConfig
 }
 
-func editListMsgForNotPAge(chatID int64, MessageID int) tgApi.Chattable {
+func createNavButton(text string, page, withDelete int) *button.Button {
+	btn := button.NewButton(text, button.ListCommand)
+	button.SetDataValue(btn, "p", page)
+	button.SetDataValue(btn, "d", withDelete)
+	button.SetDataValue(btn, "c", button.SwitchPageCommandButton)
+	return btn
+}
+
+func createDeleteButton(page *entity.UrlPage, numPage, withDelete int) *button.Button {
+	btn := page.ToButton(button.ListCommand)
+	button.SetDataValue(btn, "c", button.DeleteURLCommandButton)
+	button.SetDataValue(btn, "p", numPage)
+	button.SetDataValue(btn, "d", withDelete)
+	return btn
+}
+
+func createActionButton(text string, numPage, withDelete int, commandButton button.CommandButton) *button.Button {
+	btn := button.NewButton(text, button.ListCommand)
+	button.SetDataValue(btn, "p", numPage)
+	button.SetDataValue(btn, "c", commandButton)
+	button.SetDataValue(btn, "d", withDelete)
+	return btn
+}
+
+func editListMsgForNotPage(chatID int64, MessageID int) tgApi.Chattable {
 	msgConfig := tgApi.NewEditMessageText(chatID, MessageID, messages.MsgNoSavedPages)
 	msgConfig.DisableWebPagePreview = true
 	msgConfig.ReplyMarkup = nil

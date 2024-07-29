@@ -12,5 +12,5 @@ type IStorage interface {
 	DeleteAll(ctx context.Context, userName string) error
 	IsExists(ctx context.Context, p *entity.UrlPage) (bool, error)
 	ListUrl(ctx context.Context, userName string, offset int, limit int) ([]*entity.UrlPage, error)
-	CountPage(ctx context.Context, userName string) (int, error)
+	CountUrl(ctx context.Context, userName string) (int, error)
 }

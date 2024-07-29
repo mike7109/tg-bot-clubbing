@@ -96,7 +96,7 @@ func (s *Storage) ListUrl(ctx context.Context, userName string, offset int, limi
 	}
 	defer rows.Close()
 
-	number := 1
+	number := offset + 1
 
 	var pages []*entity.UrlPage
 	for rows.Next() {
@@ -118,7 +118,7 @@ func (s *Storage) ListUrl(ctx context.Context, userName string, offset int, limi
 	return pages, nil
 }
 
-func (s *Storage) CountPage(ctx context.Context, userName string) (int, error) {
+func (s *Storage) CountUrl(ctx context.Context, userName string) (int, error) {
 	q := `SELECT COUNT(*) FROM pages WHERE user_name = ?`
 
 	var count int
